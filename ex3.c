@@ -21,10 +21,15 @@ int main(int argc, char **argv) {
     double _x, _y;
     double x, y;
 
+    double time_start;
+    double time_end;
+
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Get_processor_name(my_name, &my_name_len);
+
+    time_start = MPI_Wtime();
 
     seed = time(NULL) + (myrank);
     srandom(seed);
@@ -52,12 +57,15 @@ int main(int argc, char **argv) {
     MPI_Reduce(&inne_cicle_count, &total_count, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&trial_num, &total_trial, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
 
+    time_end = MPI_Wtime();
+
     if (myrank == 0) {
         result = (double)total_count/(double)(total_trial) * 4;
         printf("total trial : %d\ninner circle: %d\n", total_trial, total_count);
         printf("computed approx = %.10f\n", result);
         printf("true pi         = %.10f\n", M_PI);
         printf("error           = %.10f\n", M_PI - result);
+        printf("time            = %.10f\n", time_end - time_start);
     }
 
     MPI_Finalize();

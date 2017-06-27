@@ -9,46 +9,55 @@ int main(int argc, char **argv) {
     int my_name_len;
     char my_name[MPI_MAX_PROCESSOR_NAME];
 
+    int i;
+    int trial_num = 10000;
+    int total_trial;
+    int inne_cicle_count = 0;
+    int total_count;
+    int seed;
+
+    double result;
+    double range;
+    double _x, _y;
+    double x, y;
+
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Get_processor_name(my_name, &my_name_len);
 
-    int i;
-    int trial_num = 1000;
-    int count = 0;
-    int total;
-
-    // set random seed
-    int seed = time(NULL) + (myrank);
+    seed = time(NULL) + (myrank);
     srandom(seed);
-    // printf("[rank%d] = %d\n", myrank, seed);
 
-    double _x, _y; // random point
-    double x, y;
-    // int r = 1;
+    range = 1.0 / (double)nsize;
 
     for (i = 0; i < trial_num; i++) {
-        _x = ((double)random() / (double)RAND_MAX)/4.0;
-        _y = (double)random() / (double)RAND_MAX;
+        if (myrank == nsize - 1) {
+            _x = ((double)random() / (double)((unsigned)RAND_MAX + 1)) * range;
+            _y = (double)random() / (double)((unsigned)RAND_MAX + 1);
+        }
+        else {
+            _x = ((double)random() / (double)RAND_MAX) * range;
+            _y = (double)random() / (double)RAND_MAX;
+        }
 
-        x = _x + 0.25 * myrank;
+        x = _x + (myrank * range);
         y = _y;
 
         if (x*x + y*y <= 1.0) {
-            count++;
+            inne_cicle_count++;
         }
     }
 
-    MPI_Reduce(&count, &total, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
-
-    // printf("%f, %f\n", _x, _y);
+    MPI_Reduce(&inne_cicle_count, &total_count, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&trial_num, &total_trial, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (myrank == 0) {
-        printf("trial: %d\ninner: %d\n", trial_num*nsize, total);
-        printf("computed approx = %.10f\n", (double)total/(double)trial_num);
+        result = (double)total_count/(double)(total_trial) * 4;
+        printf("total trial : %d\ninner circle: %d\n", total_trial, total_count);
+        printf("computed approx = %.10f\n", result);
         printf("true pi         = %.10f\n", M_PI);
-        printf("error           = %.10f\n", M_PI - total/(double)trial_num);
+        printf("error           = %.10f\n", M_PI - result);
     }
 
     MPI_Finalize();

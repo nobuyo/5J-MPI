@@ -3,14 +3,12 @@
 #include <stdio.h>
 #include "mla/multiple-length-arithmetic.h"
 
-#define NUMBER_OF_TERM 100
-
 void get10pow1000(NUMBER *a) {
     clearByZero(a);
-    a->n[1010] = 1;
+    a->n[100] = 1;
 }
 
-NUMBER partial_sum_for_arctan(int i, int n, int x) {
+NUMBER partial_sum_for_arctan(int start, int nsize, int x) {
     NUMBER summation;
     NUMBER denom; // bumbo
     NUMBER result;
@@ -24,21 +22,25 @@ NUMBER partial_sum_for_arctan(int i, int n, int x) {
     clearByZero(&tmp);
 
     get10pow1000(&one);
-    setInt(&x_inverse, x);
     setInt(&_x_inverse, x);
 
     int k;
-    for (k=i; k<=n; k+=8) {
+    for (k=start; ; k+=2*nsize) {
         setInt(&denom, k);
-        multiple(&x_inverse, &denom, &result);
-
-        column_divide(&one, &result, &tmp, &_tmp);
-        result = tmp;
-
-        add(&result, &summation, &tmp);
-        summation = tmp;
 
         power(&_x_inverse, &denom, &x_inverse);
+
+        multiple(&x_inverse, &denom, &result);
+
+        if (numComp(&one, &result) == -1) break;
+    
+        column_divide(&one, &result, &tmp, &_tmp);
+        copyNumber(&tmp, &result);
+        // result = tmp;
+
+        add(&result, &summation, &tmp);
+        copyNumber(&tmp, &summation);
+        // summation = tmp;
     }
     return summation;
 }
@@ -59,9 +61,9 @@ int main(int argc, char **argv) {
         MPI_Abort(MPI_COMM_WORLD,1);
     }
 
-    // define MPI_NUMBER for MPI_Send/MPI_Recv
+    define MPI_NUMBER for MPI_Send/MPI_Recv
     const int nitems=2;
-    int blocklengths[2] = {1,1};
+    int blocklengths[2] = {DIGIT, 1};
     MPI_Datatype types[2] = {MPI_INT, MPI_INT};
     MPI_Datatype MPI_NUMBER;
     MPI_Aint offsets[2];
@@ -73,14 +75,11 @@ int main(int argc, char **argv) {
     MPI_Type_commit(&MPI_NUMBER);
 
     int i;
+    int start = 2*myrank + 1;
 
-    int range_for_each_cpu = NUMBER_OF_TERM / nsize;
-    int min = range_for_each_cpu * myrank + 1;
-    int max = range_for_each_cpu * (myrank + 1);
-
-    NUMBER partial_sum_8 = partial_sum_for_arctan(min, max, 8);
-    NUMBER partial_sum_57 = partial_sum_for_arctan(min, max, 57);
-    NUMBER partial_sum_239 = partial_sum_for_arctan(min, max, 239);
+    NUMBER partial_sum_8 = partial_sum_for_arctan(start, nsize, 8);
+    NUMBER partial_sum_57 = partial_sum_for_arctan(start, nsize, 57);
+    NUMBER partial_sum_239 = partial_sum_for_arctan(start, nsize, 239);
 
     if (myrank % 2 == 1) {
         setSign(&partial_sum_8, -1);
@@ -116,21 +115,29 @@ int main(int argc, char **argv) {
             sum_8 = _tmp;
             MPI_Recv(&tmp, 1, MPI_NUMBER, i, 200+i, MPI_COMM_WORLD, &status);
             add(&sum_57, &tmp, &_tmp);
-            sum_8 = _tmp;
+            sum_57 = _tmp;
             MPI_Recv(&tmp, 1, MPI_NUMBER, i, 300+i, MPI_COMM_WORLD, &status);
             add(&sum_239, &tmp, &_tmp);
-            sum_8 = _tmp;
+            sum_239 = _tmp;
         }
+
+        multiple(&sum_8, &twentyfour, &tmp);
+        add(&answer, &tmp, &_tmp);
+        answer = _tmp;
+
+        multiple(&sum_57, &eight, &tmp);
+        add(&answer, &tmp, &_tmp);
+        answer = _tmp;
+
+        multiple(&sum_239, &four, &tmp);
+        add(&answer, &tmp, &_tmp);
+        answer = _tmp;
     }
     else {
-        MPI_Recv(&partial_sum_8, 1, MPI_INTEGER, 0, 100+myrank, MPI_COMM_WORLD);
-        MPI_Recv(&partial_sum_57, 1, MPI_INTEGER, 0, 200+myrank, MPI_COMM_WORLD);
-        MPI_Recv(&partial_sum_239, 1, MPI_INTEGER, 0, 300+myrank, MPI_COMM_WORLD);
+        MPI_Send(&partial_sum_8, 1, MPI_INTEGER, 0, 100+myrank, MPI_COMM_WORLD);
+        MPI_Send(&partial_sum_57, 1, MPI_INTEGER, 0, 200+myrank, MPI_COMM_WORLD);
+        MPI_Send(&partial_sum_239, 1, MPI_INTEGER, 0, 300+myrank, MPI_COMM_WORLD);
     }
-
-    multiple(&sum_8, &twentyfour, &tmp);
-    add(&answer, &tmp, _tmp);
-
 
     MPI_Finalize();
 

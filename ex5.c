@@ -8,7 +8,7 @@ void get10pow1000(NUMBER *a) {
     a->n[100] = 1;
 }
 
-NUMBER partial_sum_for_arctan(int start, int nsize, int x) {
+NUMBER partial_sum_for_arctan(int start, int n, int x) {
     NUMBER summation;
     NUMBER denom; // bumbo
     NUMBER result;
@@ -24,23 +24,37 @@ NUMBER partial_sum_for_arctan(int start, int nsize, int x) {
     get10pow1000(&one);
     setInt(&_x_inverse, x);
 
-    int k;
-    for (k=start; ; k+=2*nsize) {
+    int k = start;
+    while(1) {
         setInt(&denom, k);
 
         power(&_x_inverse, &denom, &x_inverse);
 
         multiple(&x_inverse, &denom, &result);
 
+        // printf("k: %d, x: %d, nsize: %d, denom: ", k, x, n);
+        // dispNumberZeroSuppress(&result);
+        // putchar('\n');
+
         if (numComp(&one, &result) == -1) break;
     
-        column_divide(&one, &result, &tmp, &_tmp);
+        divide(&one, &result, &tmp, &_tmp);
+        // column_divide(&one, &result, &tmp, &_tmp);
         copyNumber(&tmp, &result);
         // result = tmp;
+
+        printf("k: %d, x: %d, nsize: %d, sum: ", k, x, n);
+        dispNumberZeroSuppress(&result);
+        putchar('\n');
 
         add(&result, &summation, &tmp);
         copyNumber(&tmp, &summation);
         // summation = tmp;
+
+        dispNumberZeroSuppress(&summation);
+        putchar('\n');
+
+        k += n * 2;
     }
     return summation;
 }
@@ -61,8 +75,8 @@ int main(int argc, char **argv) {
         MPI_Abort(MPI_COMM_WORLD,1);
     }
 
-    define MPI_NUMBER for MPI_Send/MPI_Recv
-    const int nitems=2;
+    // define MPI_NUMBER for MPI_Send/MPI_Recv
+    const int nitems = 2;
     int blocklengths[2] = {DIGIT, 1};
     MPI_Datatype types[2] = {MPI_INT, MPI_INT};
     MPI_Datatype MPI_NUMBER;
@@ -87,10 +101,14 @@ int main(int argc, char **argv) {
         setSign(&partial_sum_239, -1);
     }
 
+    printf("partial sums:\n");
+    printf("atan(1/8): ");
     dispNumberZeroSuppress(&partial_sum_8);
     putchar('\n');
+    printf("atan(1/57): ");
     dispNumberZeroSuppress(&partial_sum_57);
     putchar('\n');
+    printf("atan(1/239): ");
     dispNumberZeroSuppress(&partial_sum_239);
     putchar('\n');
 
@@ -103,6 +121,8 @@ int main(int argc, char **argv) {
     clearByZero(&sum_57);
     clearByZero(&sum_239);
     clearByZero(&answer);
+    clearByZero(&tmp);
+    clearByZero(&_tmp);
 
     setInt(&four, 4);
     setInt(&eight, 8);
@@ -121,6 +141,14 @@ int main(int argc, char **argv) {
             sum_239 = _tmp;
         }
 
+        printf("sums:\n");
+        dispNumberZeroSuppress(&sum_8);
+        putchar('\n');
+        dispNumberZeroSuppress(&sum_57);
+        putchar('\n');
+        dispNumberZeroSuppress(&sum_239);
+        putchar('\n');
+
         multiple(&sum_8, &twentyfour, &tmp);
         add(&answer, &tmp, &_tmp);
         answer = _tmp;
@@ -132,12 +160,17 @@ int main(int argc, char **argv) {
         multiple(&sum_239, &four, &tmp);
         add(&answer, &tmp, &_tmp);
         answer = _tmp;
+
+        dispNumberZeroSuppress(&answer);
+        putchar('\n');
     }
     else {
         MPI_Send(&partial_sum_8, 1, MPI_INTEGER, 0, 100+myrank, MPI_COMM_WORLD);
         MPI_Send(&partial_sum_57, 1, MPI_INTEGER, 0, 200+myrank, MPI_COMM_WORLD);
         MPI_Send(&partial_sum_239, 1, MPI_INTEGER, 0, 300+myrank, MPI_COMM_WORLD);
     }
+
+
 
     MPI_Finalize();
 

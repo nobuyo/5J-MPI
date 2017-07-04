@@ -1,4 +1,4 @@
 CC := mpicc
 
 %: %.c
-	$(CC) $< -o $@ -lm
+	$(CC) $< -o $@ -lm -O3

@@ -1,7 +1,7 @@
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "mla/integer.h"
+#include "integer.h"
 
 void get10pow1000(Number *a) {
     clear_by_zero(a);
@@ -10,7 +10,7 @@ void get10pow1000(Number *a) {
 
 Number partial_sum_for_arctan(int start, int n, int x, int rank) {
     Number summation;
-    Number denom; // bumbo
+    Number denom;
     Number result;
     Number x_inverse, _x_inverse;
     Number one;
@@ -33,7 +33,7 @@ Number partial_sum_for_arctan(int start, int n, int x, int rank) {
         multiple(&x_inverse, &denom, &result);
 
         if (compare_number(&one, &result) == -1) break;
-    
+
         divide(&one, &result, &tmp, &_tmp);
         copy_number(&tmp, &result);
 
@@ -86,17 +86,6 @@ int main(int argc, char **argv) {
         set_sign(&partial_sum_57, -1);
         set_sign(&partial_sum_239, -1);
     }
-
-    // printf("partial sums:\n");
-    // printf("atan(1/8): ");
-    // display_number_zero_suppress(&partial_sum_8);
-    // putchar('\n');
-    // printf("atan(1/57): ");
-    // display_number_zero_suppress(&partial_sum_57);
-    // putchar('\n');
-    // printf("atan(1/239): ");
-    // display_number_zero_suppress(&partial_sum_239);
-    // putchar('\n');
 
     MPI_Status status;
 

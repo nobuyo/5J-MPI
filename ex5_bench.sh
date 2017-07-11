@@ -1,13 +1,13 @@
 #!/bin/bash
 
-alias awk='/usr/bin/awk'
+# alias awk='/usr/bin/awk'
 
-for i in {2..30..2}; do
+for i in {4..30..2}; do
   res1=()
   res2=()
 
   for j in {1..5}; do
-    res=`mpirun -np $i ex5 | grep time | awk {'print $NF'} `
+    res=`mpirun -machinefile ~/mymachines -np $i ex5 | grep time | awk {'print $NF'} `
     res1+=`echo $res | sed -e 's/$/+/'`
     res2+=`echo $res | sed -e 's/$/, /'`
   done
@@ -19,3 +19,10 @@ for i in {2..30..2}; do
   unset res1[@]
   unset res2[@]
 done
+
+# alias awk='/usr/bin/awk'
+
+# for i in {4..30..2}; do
+#   echo -n "$i: "
+#   mpirun -machinefile ~/mymachines -np $i  ex5 | grep time | awk '{print $NF}'
+# done

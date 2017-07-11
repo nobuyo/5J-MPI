@@ -79,7 +79,9 @@ int main(int argc, char **argv) {
     double time_before;
     double time_after;
 
-    time_before = MPI_Wtime();
+    if (myrank == 0) {
+        time_before = MPI_Wtime();
+    }
 
     Number partial_sum_8 = partial_sum_for_arctan(start, nsize, 8, myrank);
     Number partial_sum_57 = partial_sum_for_arctan(start, nsize, 57, myrank);
@@ -147,9 +149,9 @@ int main(int argc, char **argv) {
         MPI_Send(&partial_sum_239, 1, MPI_Number, 0, 300+myrank, MPI_COMM_WORLD);
     }
 
-    time_after = MPI_Wtime();
 
     if (myrank == 0) {
+        time_after = MPI_Wtime();
         printf("time %f\n", time_after - time_before);
     }
 

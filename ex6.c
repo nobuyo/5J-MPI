@@ -4,6 +4,8 @@
 #include <time.h>
 
 #define FIELD_SIZE 50
+// #define HEIGHT 40
+// #define WIDTH 40
 #define MAX_GEN 100
 
 void display(int field[FIELD_SIZE][FIELD_SIZE]) {
@@ -68,6 +70,14 @@ void generate_new_era(int field[FIELD_SIZE][FIELD_SIZE],
 
 void merge(int field[FIELD_SIZE][FIELD_SIZE],
         int next_gen[FIELD_SIZE][FIELD_SIZE], int begin, int end) {
+}
+
+void send() {
+    // todo
+}
+
+void recv() {
+    // todo
 }
 
 int main(int argc, char **argv) {

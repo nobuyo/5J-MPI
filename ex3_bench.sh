@@ -4,7 +4,7 @@ for i in {1..30}; do
   res=()
 
   for j in {1..5}; do
-    res+=`mpirun -np $i ex3 | grep time | awk {'print $NF'} | sed -e 's/$/+/'`
+    res+=`mpirun  -machinefile ~/mymachines -np $i ex3 | grep time | awk {'print $NF'} | sed -e 's/$/+/'`
     # res+=`mpirun -np $i ex3 | grep time | awk {'print $NF'} | sed -e 's/$/, /'`
   done
 

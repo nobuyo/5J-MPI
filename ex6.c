@@ -1,65 +1,91 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 
-#define FIELD_SIZE 50
-// #define HEIGHT 40
-// #define WIDTH 40
-#define MAX_GEN 100
+#define HEIGHT 40
+#define WIDTH 40
+#define MAX_GEN 50
 
-void display(int field[FIELD_SIZE][FIELD_SIZE]) {
+int field[HEIGHT][WIDTH];
+int next_gen[HEIGHT][WIDTH];
+
+int nsize;
+int myrank;
+int my_name_len;
+char my_name[MPI_MAX_PROCESSOR_NAME];
+
+void display() {
     int i,j;
+
+    if (myrank != 0) return;
+
     printf("\033[;H\033[2J");
-    for (i = 0; i < FIELD_SIZE; i++) {
-        for (j = 0; j < FIELD_SIZE; j++) {
+    for (i = 0; i < HEIGHT; i++) {
+        for (j = 0; j < WIDTH; j++) {
             if (field[i][j] == 1) {
                 printf("@");
             }
             else {
-                printf(" ");
+                printf("-");
             }
         }
         printf("\n");
     }
 }
 
-void init(int field[FIELD_SIZE][FIELD_SIZE]) {
+void init() {
     int i,j;
-    for (i = 0; i < FIELD_SIZE; i++) {
-        for (j = 0; j < FIELD_SIZE; j++) {
-            if (random() % 100 < 9) {
-                field[i][j] = 1;
-            }
-            else {
-                field[i][j] = 0;
-            }
+    for (i = 0; i < HEIGHT; i++) {
+        for (j = 0; j < WIDTH; j++) {
+            field[i][j] = 0;
+            // if (random() % 100 < 9) {
+            //     field[i][j] = 1;
+            // }
+            // else {
+            //     field[i][j] = 0;
+            // }
+        }
+    }
+
+    field[3][3] = 1;
+    field[3][4] = 1;
+    field[3][5] = 1;
+    field[4][3] = 1;
+    field[5][4] = 1;
+}
+
+void copy(int begin, int end) {
+    int i, j;
+    for (i = begin; i < end; i++) {
+        for (j = 0; j < WIDTH; j++) {
+            field[i][j] = next_gen[i][j];
         }
     }
 }
 
-void generate_new_era(int field[FIELD_SIZE][FIELD_SIZE],
-        int next_gen[FIELD_SIZE][FIELD_SIZE], int begin, int end) {
+void build_new_gen(int begin, int end) {
     int i, j;
     int k, l, n, m;
     int count;
 
-    for (i = 0; i < FIELD_SIZE; i++) {
-        for (j = begin+1; j < end-1; j++) {
-            k = (FIELD_SIZE + i - 1) % FIELD_SIZE;
-            l = (FIELD_SIZE + j - 1) % FIELD_SIZE;
-            m = (i + 1) % FIELD_SIZE;
-            n = (j + 1) % FIELD_SIZE;
+    for (i = begin; i < end; i++) {
+        for (j = 0; j < WIDTH; j++) {
+            k = (HEIGHT + i - 1) % HEIGHT;
+            l = (WIDTH + j - 1) % WIDTH;
+            m = (i + 1) % HEIGHT;
+            n = (j + 1) % WIDTH;
 
             count = field[k][l]   +  field[k][j]   +  field[k][n]
                   + field[i][l]   /*field[i][j]*/  +  field[i][n]
-                  + field[m][l]   + field[m][j]    +  field[m][n];
+                  + field[m][l]   +  field[m][j]   +  field[m][n];
 
             if (count == 3) {
                 next_gen[i][j] = 1;
             }
             else if (count == 2) {
-                continue;
+                next_gen[i][j] = field[i][j];
             }
             else {
                 next_gen[i][j] = 0;
@@ -68,59 +94,135 @@ void generate_new_era(int field[FIELD_SIZE][FIELD_SIZE],
     }
 }
 
-void merge(int field[FIELD_SIZE][FIELD_SIZE],
-        int next_gen[FIELD_SIZE][FIELD_SIZE], int begin, int end) {
+
+void mpi_send(int line[HEIGHT], int dest, int tag) {
+    MPI_Send(line, WIDTH, MPI_INTEGER, dest, tag, MPI_COMM_WORLD);
 }
 
-void send() {
-    // todo
+void mpi_receive(int line[HEIGHT], int source, int tag) {
+    MPI_Status status;
+    MPI_Recv(line, WIDTH, MPI_INTEGER, source, tag, MPI_COMM_WORLD, &status);
 }
 
-void recv() {
-    // todo
+void destribute() {
+    int i,j;
+    int range = HEIGHT / nsize;
+    if (myrank == 0) {
+        for (i = 1; i < nsize; i++) {
+            for (j = range * i - 1; j <= range * (i+1); j++) {
+                mpi_send(field[(j+HEIGHT) % HEIGHT], i, 38);
+            }
+        }
+        return;
+    }
+
+    for (j = range * myrank - 1; j <= range * (myrank+1); j++) {
+        mpi_receive(field[(j+HEIGHT) % HEIGHT], 0, 38);
+    }
+}
+
+void merge() {
+    int i,j;
+    int range = HEIGHT / nsize;
+    if (myrank == 0) {
+        for (i = 1; i < nsize; i++) {
+            for (j = range * i; j < range * (i+1); j++) {
+                mpi_receive(field[j], i, 100);
+            }
+        }
+
+        return;
+    }
+
+    for (j = range * myrank; j < range * (myrank+1); j++) {
+        mpi_send(next_gen[j], 0, 100);
+    }
+}
+
+void comm_with_neighbor(int h, int is_odd, int direction) {
+    int cpu;
+    if (direction == 0) {
+        cpu = (myrank - 1 + nsize) % nsize;
+        if (is_odd) {
+            mpi_receive(field[h], cpu, 99);
+            h = (h + 1) % HEIGHT;
+            mpi_send(next_gen[h], cpu, 99);
+        }
+        else {
+            mpi_send(next_gen[h], cpu, 99);
+            h = (h - 1 + HEIGHT) % HEIGHT;
+            mpi_receive(field[h], cpu, 99);
+        }
+    }
+    else {
+        cpu = (myrank + 1) % nsize;
+        if (is_odd) {
+            mpi_receive(field[h], cpu, 99);
+            h = (h - 1 + HEIGHT) % HEIGHT;
+            mpi_send(next_gen[h], cpu, 99);
+        } 
+        else {
+            mpi_send(next_gen[h], cpu, 99);
+            h = (h + 1) % HEIGHT;
+            mpi_receive(field[h], cpu, 99);
+        }
+    }
+}
+
+void comm() {
+    if (myrank % 2 == 1) {
+        comm_with_neighbor((HEIGHT / nsize * myrank - 1 + HEIGHT) % HEIGHT, 1, 0);
+        comm_with_neighbor((HEIGHT / nsize * (myrank + 1)) % HEIGHT, 1, 1);
+    }
+    else {
+        comm_with_neighbor((HEIGHT / nsize * (myrank + 1) - 1) % HEIGHT, 0, 1);
+        comm_with_neighbor(HEIGHT / nsize * myrank, 0, 0);
+    }
 }
 
 int main(int argc, char **argv) {
-    int nsize;
-    int myrank;
-    int my_name_len;
-    char my_name[MPI_MAX_PROCESSOR_NAME];
+    int i, j;
+    int gen = 0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Get_processor_name(my_name, &my_name_len);
 
-    int i, j;
-    int gen = 0;
-    int field[FIELD_SIZE][FIELD_SIZE];
-    int next_gen[FIELD_SIZE][FIELD_SIZE];
-
-    if (FIELD_SIZE % nsize != 0) {
+    if (HEIGHT % nsize != 0) {
         printf("cpu num must be even number.\n");
         MPI_Abort(MPI_COMM_WORLD,1);
     }
 
-    int range_for_each_cpu = FIELD_SIZE / nsize;
-    int begin = range_for_each_cpu * myrank - 1;
-    int end = nsize == 1 ? FIELD_SIZE + 1
-              : range_for_each_cpu * (myrank + 1) + 1;
+    int range_for_each_cpu = HEIGHT / nsize;
+    int begin = range_for_each_cpu * myrank;
+    int end = range_for_each_cpu * (myrank + 1);
 
     if (myrank == 0) {
         srandom(time(NULL + myrank));
-        init(field);
+        init();
     }
 
-    while (gen < MAX_GEN) {
-        generate_new_era(field, next_gen, begin, end);
-        // display(field);
-
-        usleep(40000);
-        gen++;
-        for (i = 0; i < FIELD_SIZE; i++) {
-            for (j = 0; j <FIELD_SIZE; j++) {
-                field[i][j] = next_gen[i][j];
-            }
+    if (nsize == 1) {
+        while (gen < MAX_GEN) {
+            build_new_gen(begin, end);
+            copy(begin, end);
+            usleep(40000);
+            display();
+            gen++;
+        }
+    }
+    else {
+        while (gen < MAX_GEN) {
+            destribute();
+            build_new_gen(begin, end);
+            copy(begin, end);
+            merge();
+            comm();
+            usleep(40000);
+            display();
+            MPI_Barrier(MPI_COMM_WORLD);
+            gen++;
         }
     }
 

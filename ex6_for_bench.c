@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <time.h>
 
-#define HEIGHT 100
-#define WIDTH 100
+#define HEIGHT 400
+#define WIDTH 2000
 #define MAX_GEN 100
 
 int field[HEIGHT][WIDTH];
@@ -40,20 +40,20 @@ void init() {
     for (i = 0; i < HEIGHT; i++) {
         for (j = 0; j < WIDTH; j++) {
             field[i][j] = 0;
-            if (random() % 100 < 9) {
-                field[i][j] = 1;
-            }
-            else {
-                field[i][j] = 0;
-            }
+            // if (random() % 100 < 9) {
+            //     field[i][j] = 1;
+            // }
+            // else {
+            //     field[i][j] = 0;
+            // }
         }
     }
 
-    // field[3][3] = 1;
-    // field[3][4] = 1;
-    // field[3][5] = 1;
-    // field[4][3] = 1;
-    // field[5][4] = 1;
+    field[3][3] = 1;
+    field[3][4] = 1;
+    field[3][5] = 1;
+    field[4][3] = 1;
+    field[5][4] = 1;
 }
 
 void copy(int begin, int end) {
@@ -160,7 +160,7 @@ void comm_with_neighbor(int h, int is_odd, int direction) {
             mpi_receive(field[h], cpu, 99);
             h = (h - 1 + HEIGHT) % HEIGHT;
             mpi_send(next_gen[h], cpu, 99);
-        } 
+        }
         else {
             mpi_send(next_gen[h], cpu, 99);
             h = (h + 1) % HEIGHT;
@@ -191,7 +191,6 @@ int main(int argc, char **argv) {
 
     double time_before;
     double time_after;
-
 
     if (HEIGHT % nsize != 0) {
         printf("cpu num must be even number.\n");
@@ -227,7 +226,7 @@ int main(int argc, char **argv) {
             copy(begin, end);
             merge();
             comm();
-            usleep(40000);
+            // usleep(40000);
             // display();
             MPI_Barrier(MPI_COMM_WORLD);
             gen++;

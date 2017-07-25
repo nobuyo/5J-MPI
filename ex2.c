@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
     int result;
     double time_before;
     double time_after;
+    int i;
 
     if (atoi(argv[1]) % nsize != 0 && myrank == nsize-1) {
         // todo: evenly allocate
@@ -41,11 +42,13 @@ int main(int argc, char **argv) {
 
     time_before = MPI_Wtime();
 
-    int result_of_each_cpu = sum(min, max);
+    for (i=0; i<20000; i++) {
+        int result_of_each_cpu = sum(min, max);
 
-    // printf("%d,%d,%d\n", range_for_each_cpu, min, max);
+        // printf("%d,%d,%d\n", range_for_each_cpu, min, max);
 
-    MPI_Reduce(&result_of_each_cpu, &result, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&result_of_each_cpu, &result, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
+    }
 
     time_after = MPI_Wtime();
 

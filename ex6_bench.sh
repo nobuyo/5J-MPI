@@ -5,7 +5,7 @@
 mkdir -p data
 d=`date "+%Y%m%d-%H%M%S"`
 
-for i in {4..30..2}; do
+for i in {1,2,10,20,40}; do
   res1=()
   res2=()
 

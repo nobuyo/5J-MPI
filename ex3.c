@@ -72,7 +72,6 @@ int main(int argc, char **argv) {
 
     printf("cpu%d: %d\n", myrank, innner_circlr_count);
 
-
     if (myrank == 0) {
         time_end = MPI_Wtime();
         result = (double)total_count/(double)(trial_num) * 4;

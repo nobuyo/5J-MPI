@@ -27,10 +27,10 @@ for i in {1..30}; do
 
   for j in {1..5}; do
     res=`mpirun -machinefile ~/mymachines -np $i ex3 | grep time | awk {'print $NF'} `
-    res=`mpirun -machinefile ~/mymachines -np $i ex3 | grep comm | awk {'print $NF'} `
+    com=`mpirun -machinefile ~/mymachines -np $i ex3 | grep comm | awk {'print $NF'} `
     res1+=`echo $res | sed -e 's/$/+/'`
     res2+=`echo $res | sed -e 's/$/, /'`
-    com+=`echo $res | sed -e 's/$/+/'`
+    com+=`echo $com | sed -e 's/$/+/'`
   done
 
   ave=`echo "($res1 0) / 5.0" | bc -l`

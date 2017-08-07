@@ -49,9 +49,9 @@ int main(int argc, char **argv) {
         r = random() % 100;
 
         MPI_Recv(b, 6, MPI_INTEGER, 0, 100+myrank, MPI_COMM_WORLD, &status);
-        for (i=0; i<6; i++) {
-            b[i] += r;
-        }
+        // for (i=0; i<6; i++) {
+        //     b[i] += r;
+        // }
 
         MPI_Send(b, 6, MPI_INTEGER, 0, 200+myrank, MPI_COMM_WORLD);
         MPI_Send(&r, 1, MPI_INTEGER, 0, 300+myrank, MPI_COMM_WORLD);

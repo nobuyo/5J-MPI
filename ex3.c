@@ -24,6 +24,10 @@ int main(int argc, char **argv) {
     double time_start;
     double time_end;
 
+    double time_comm_start;
+    double time_comm_end;
+
+
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
@@ -56,8 +60,17 @@ int main(int argc, char **argv) {
         }
     }
 
+    if (myrank == 0) {
+        time_comm_start = MPI_Wtime();
+    }
+
     MPI_Reduce(&innner_circlr_count, &total_count, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
     // MPI_Reduce(&trial_num, &total_trial, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (myrank == 0) {
+        time_comm_end = MPI_Wtime();
+    }
+
+    printf("cpu%d: %d\n", myrank, innner_circlr_count);
 
 
     if (myrank == 0) {
@@ -68,6 +81,7 @@ int main(int argc, char **argv) {
         printf("true pi         = %.10f\n", M_PI);
         printf("error           = %.10f\n", M_PI - result);
         printf("time            = %.10f\n", time_end - time_start);
+        printf("comm            = %.10f\n", time_comm_end - time_comm_start);
     }
 
     MPI_Finalize();

@@ -18,8 +18,13 @@ int main(int argc, char **argv) {
     int b[6] = {0};
     MPI_Status status;
 
+    double time_start;
+    double time_end;
+
     if (myrank == 0) {
         int a[6] = {3, 1, 4, 1, 5, 9};
+
+        time_start = MPI_Wtime();
 
         for (i=1; i<nsize; i++) {
             MPI_Send(a, 6, MPI_INTEGER, i, 100+i, MPI_COMM_WORLD);
@@ -34,6 +39,9 @@ int main(int argc, char **argv) {
             }
             putchar('\n');
         }
+
+        time_end = MPI_Wtime();
+        printf("%.10f\n", time_end - time_start);
 
     }
     else {

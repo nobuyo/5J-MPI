@@ -21,7 +21,8 @@ void display() {
 
     if (myrank != 0) return;
 
-    printf("\033[;H\033[2J");
+    // printf("\033[;H\033[2J");
+    printf("\n====================\n");
     for (i = 0; i < HEIGHT; i++) {
         for (j = 0; j < WIDTH; j++) {
             if (field[i][j] == 1) {

@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Get_processor_name(my_name, &my_name_len);
 
-    if (atoi(argv[1]) > 65535 || atoi(argv[1]) <= 0) {
+    if (myrank == 0 && (atoi(argv[1]) > 65535 || atoi(argv[1]) <= 0)) {
         printf("argment invalid.\n");
         MPI_Abort(MPI_COMM_WORLD,1);
     }
@@ -33,13 +33,11 @@ int main(int argc, char **argv) {
     int result;
 
     if (atoi(argv[1]) % nsize != 0 && myrank == nsize-1) {
-        // todo: evenly allocate
         max = atoi(argv[1]);
     }
 
     int result_of_each_cpu = sum(min, max);
 
-    // printf("%d,%d,%d\n", range_for_each_cpu, min, max);
 
     MPI_Reduce(&result_of_each_cpu, &result, 1, MPI_INTEGER, MPI_SUM, 0, MPI_COMM_WORLD);
 

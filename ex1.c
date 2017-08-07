@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Get_processor_name(my_name, &my_name_len);
 
-    if (myrank == 0 && (atoi(argv[1]) > 65535 || atoi(argv[1]) <= 0)) {
+    if (myrank == 0 && (atoi(argv[1]) > 65535 || atoi(argv[1]) <= 0 || argc != 2)) {
         printf("argment invalid.\n");
         MPI_Abort(MPI_COMM_WORLD,1);
     }
